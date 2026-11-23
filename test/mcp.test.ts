@@ -137,4 +137,19 @@ describe("raven mcp", () => {
     expect((await raven.agents({ project: P })).map((a) => a.name)).toContain(name);
     mcp.close();
   });
+
+  it("without an agent identity it initializes but lists no tools and no resources, and registers nobody", async () => {
+    const mcp = createMcpServer({ raven, project: P, agent: undefined });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "test", version: "0" });
+    await mcp.server.connect(serverSide);
+    await client.connect(clientSide);
+    expect((await client.listTools()).tools).toEqual([]);
+    expect((await client.listResources()).resources).toEqual([]);
+    const before = (await raven.agents({ project: P, includeRetired: true })).length;
+    await raven.send({ project: P, from: "Queen", to: ["Ana"], subject: "s", body: "" });
+    expect((await raven.agents({ project: P, includeRetired: true })).length).toBe(before);
+    await client.close();
+    mcp.close();
+  });
 });

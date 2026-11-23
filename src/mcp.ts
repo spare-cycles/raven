@@ -1,10 +1,13 @@
 /**
  * `raven mcp`: the tools, plus push for the session's own agent. An MCP client that injects resource updates (omp
  * with `mcp.notifications: true`) starts a turn from each delivery; `extension/raven-wake.ts` covers clients that
- * do not.
+ * do not. A session with no agent identity gets an empty server: one entry in a shared `mcp.json` must not hand
+ * messaging tools to sessions that are not raven agents.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
   SubscribeRequestSchema,
   UnsubscribeRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
@@ -12,10 +15,12 @@ import { registerTools } from "./mcp-tools.ts";
 import type { Raven } from "./types.ts";
 import { Waker, type WakeTarget } from "./wake.ts";
 
+const SERVER_INFO = { name: "raven", version: "0.1.0" };
+
 export type McpOptions = {
   readonly raven: Raven;
   readonly project: string | undefined;
-  /** The identity this process wakes for; without it (or a project) the server has tools and no push. */
+  /** The identity this process acts and wakes for; without it the server lists no tools and no resources. */
   readonly agent: string | undefined;
   /** Where a stream failure that stops the wake-ups is reported; stderr in the CLI. */
   readonly log?: (line: string) => void;
@@ -62,13 +67,23 @@ function wireWaker(server: McpServer, raven: Raven, waker: Waker, target: WakeTa
   });
 }
 
+/** Initializes like any server, then lists nothing: no tool to call, no resource to read or subscribe to. */
+function emptyServer(): RavenMcp {
+  const server = new McpServer(SERVER_INFO, { capabilities: { tools: {}, resources: {} } });
+  server.server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: [] }));
+  server.server.setRequestHandler(ListResourcesRequestSchema, () => ({ resources: [] }));
+  return { server, close: (): void => undefined };
+}
+
 export function createMcpServer(options: McpOptions): RavenMcp {
   const { raven, project, agent } = options;
-  const server = new McpServer(
-    { name: "raven", version: "0.1.0" },
-    { capabilities: { resources: { subscribe: true, listChanged: false } } },
-  );
-  const target = project === undefined || agent === undefined ? null : { project, agent };
+  if (agent === undefined) {
+    return emptyServer();
+  }
+  const server = new McpServer(SERVER_INFO, {
+    capabilities: { resources: { subscribe: true, listChanged: false } },
+  });
+  const target = project === undefined ? null : { project, agent };
   const waker =
     target === null
       ? null
