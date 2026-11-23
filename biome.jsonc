@@ -3,7 +3,7 @@
   "assist": { "actions": { "source": { "organizeImports": "on" } }, "enabled": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["src/**/*.ts", "test/**/*.ts", "*.json", "*.jsonc"]
+    "includes": ["src/**/*.ts", "test/**/*.ts", "extension/**/*.ts", "*.json", "*.jsonc"]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "javascript": { "formatter": { "quoteStyle": "double" } },
@@ -12,7 +12,12 @@
     "enabled": true,
     "rules": {
       "complexity": { "useLiteralKeys": "off" },
-      "correctness": { "noNodejsModules": "off", "useQwikValidLexicalScope": "off" },
+      "correctness": {
+        "noNodejsModules": "off",
+        // tsc resolves every import already; Biome's resolver misses the MCP SDK's `./*` subpath exports.
+        "noUnresolvedImports": "off",
+        "useQwikValidLexicalScope": "off"
+      },
       "nursery": {
         // Bun is the runtime: the store is bun:sqlite.
         "noBunModules": "off",
@@ -56,11 +61,23 @@
       "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
     },
     {
+      // The one module that reads the environment; everything else takes values from it.
+      "includes": ["src/env.ts"],
+      "linter": { "rules": { "style": { "noProcessEnv": "off" } } }
+    },
+    {
+      // omp loads an extension through its default export.
+      "includes": ["extension/**"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
       "includes": ["test/**"],
       "linter": {
         "rules": {
           "complexity": { "noExcessiveLinesPerFunction": "off" },
-          "performance": { "useTopLevelRegex": "off" }
+          "performance": { "useTopLevelRegex": "off" },
+          // The omp end-to-end test reads its opt-in flag and hands its own environment to the child it spawns.
+          "style": { "noProcessEnv": "off" }
         }
       }
     }

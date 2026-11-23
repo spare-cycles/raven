@@ -1,7 +1,6 @@
 /** Projects and agent identities. */
 import type { Database } from "bun:sqlite";
 import { RavenError } from "./error.ts";
-import { freshName } from "./names.ts";
 import { type AgentRow, agentRow, projectId, toAgent } from "./rows.ts";
 import type { Agent, RegisterInput } from "./types.ts";
 
@@ -11,7 +10,7 @@ export function register(db: Database, input: RegisterInput, ts: string): Agent 
   if (input.project.length === 0) {
     throw new RavenError("invalid", "project must not be empty");
   }
-  if (input.name !== undefined && !NAME.test(input.name)) {
+  if (!NAME.test(input.name)) {
     throw new RavenError("invalid", `agent name must match ${NAME.source}: ${input.name}`);
   }
   return db.transaction((): Agent => {
@@ -19,10 +18,7 @@ export function register(db: Database, input: RegisterInput, ts: string): Agent 
       "INSERT INTO projects (key, created_ts) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
     ).run(input.project, ts);
     const pid = projectId(db, input.project);
-    const exists = db.query<{ id: number }, [number, string]>(
-      "SELECT id FROM agents WHERE project_id = ? AND name = ?",
-    );
-    const name = input.name ?? freshName((n) => exists.get(pid, n) !== null);
+    const { name } = input;
     const row = db
       .query<AgentRow, [number, string, string, string, string, string]>(
         `INSERT INTO agents (project_id, name, program, model, task, created_ts) VALUES (?, ?, ?, ?, ?, ?)

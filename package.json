@@ -8,6 +8,9 @@
     "url": "git+https://github.com/spare-cycles/raven.git"
   },
   "type": "module",
+  "bin": {
+    "raven": "src/cli.ts"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
@@ -28,6 +31,7 @@
     "typescript": "7.0.2"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "zod": "4.6.7"
   }
 }
