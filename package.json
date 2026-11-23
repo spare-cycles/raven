@@ -1,0 +1,25 @@
+{
+  "name": "@spare-cycles/raven",
+  "version": "0.1.0",
+  "description": "Agent messaging: durable store, SSE push, and an MCP server that wakes agents",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "check": "biome ci && tsc --noEmit",
+    "fmt": "biome check --write",
+    "test": "bun test ./test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.8",
+    "@types/bun": "1.4.5",
+    "typescript": "7.0.2"
+  }
+}

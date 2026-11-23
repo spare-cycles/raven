@@ -1,0 +1,69 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } }, "enabled": true },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": ["src/**/*.ts", "test/**/*.ts", "*.json", "*.jsonc"]
+  },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": { "formatter": { "quoteStyle": "double" } },
+  "linter": {
+    "domains": { "project": "all", "test": "all", "types": "all" },
+    "enabled": true,
+    "rules": {
+      "complexity": { "useLiteralKeys": "off" },
+      "correctness": { "noNodejsModules": "off", "useQwikValidLexicalScope": "off" },
+      "nursery": {
+        // Bun is the runtime: the store is bun:sqlite.
+        "noBunModules": "off",
+        // SQLite NULL is data: an unread delivery's read_ts, a message without a topic.
+        "noNull": "off",
+        "recommended": true,
+        "useConsistentFunctionStyle": { "level": "on", "options": { "style": "declaration" } }
+      },
+      "performance": { "noAwaitInLoops": "off" },
+      "preset": "all",
+      "style": {
+        "noExcessiveClassesPerFile": "off",
+        "noMagicNumbers": "off",
+        "noProcessEnv": "error",
+        "noTernary": "off",
+        "useConsistentTypeDefinitions": "off",
+        "useExportsLast": "off",
+        "useNamingConvention": {
+          "level": "on",
+          "options": {
+            "conventions": [
+              {
+                // Row fields keep the table's snake_case (`read_ts`).
+                "formats": ["camelCase", "CONSTANT_CASE", "snake_case"],
+                "selector": { "kind": "objectLiteralMember" }
+              },
+              {
+                "formats": ["camelCase", "CONSTANT_CASE", "snake_case"],
+                "selector": { "kind": "typeMember" }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      // The package's one entry point (`exports["."]`): consumers import from here, nothing inside does.
+      "includes": ["src/index.ts"],
+      "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
+    },
+    {
+      "includes": ["test/**"],
+      "linter": {
+        "rules": {
+          "complexity": { "noExcessiveLinesPerFunction": "off" },
+          "performance": { "useTopLevelRegex": "off" }
+        }
+      }
+    }
+  ],
+  "vcs": { "clientKind": "git", "enabled": true, "useIgnoreFile": true }
+}
