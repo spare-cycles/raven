@@ -196,21 +196,24 @@ function listAgents({ server, raven, d }: Ctx): void {
 function registerAgent({ server, raven, d }: Ctx, onRegistered: OnRegistered): void {
   const inputSchema = {
     project_key: projectKey,
-    name: z.string().min(1),
+    name: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Omit to get a raven-chosen name no agent has ever had"),
     program: z.string(),
     model: z.string(),
     task_description: z.string().optional(),
   };
   const description =
-    "Create or update an agent identity (and its project). The caller chooses the name; registering a retired name restores it.";
+    "Create or update an agent identity (and its project). Without a name, raven picks a fresh <Adjective><Noun>; registering a retired name restores it.";
   server.registerTool("register_agent", { description, inputSchema }, (a) =>
     result(async () => {
       const agent = await raven.register({
         project: pick(a.project_key, d.project, "project_key"),
-        name: a.name,
         program: a.program,
         model: a.model,
-        ...present({ task: a.task_description }),
+        ...present({ name: a.name, task: a.task_description }),
       });
       onRegistered(agent.name);
       return agent;

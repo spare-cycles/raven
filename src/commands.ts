@@ -133,24 +133,46 @@ export function tokenCommand(args: string[]): void {
   }
 }
 
-/** Parses `--db` plus the named string flags, opens the store, runs, closes. */
+/** Parses `--db`, the named string flags and any positionals, opens the store, runs, closes. */
 function withStore<T>(
   args: string[],
   flags: readonly string[],
-  run: (store: Store, values: Record<string, string | undefined>) => T,
+  run: (store: Store, values: Record<string, string | undefined>, positionals: string[]) => T,
 ): T {
   const options = Object.fromEntries(["db", ...flags].map((f) => [f, { type: "string" as const }]));
-  const { values } = parseArgs({ args, options, strict: true });
+  const { values, positionals } = parseArgs({
+    args,
+    options,
+    strict: true,
+    allowPositionals: true,
+  });
   const strings: Record<string, string | undefined> = {};
   for (const [k, v] of Object.entries(values)) {
     strings[k] = typeof v === "string" ? v : undefined;
   }
   const store = new Store(required(strings["db"], "db"));
   try {
-    return run(store, strings);
+    return run(store, strings, positionals);
   } finally {
     store.close();
   }
+}
+
+/** `get <key>` prints the list in force; `set <key> --value "A, B, …"` replaces it (an empty value restores the default). */
+export function configCommand(args: string[]): void {
+  withStore(args, ["value"], (store, values, [action, key]) => {
+    const setting = required(key, "a setting key");
+    if (action === "get") {
+      out(store.getSetting(setting).join(", "));
+    } else if (action === "set") {
+      store.setSetting(setting, values["value"] ?? "");
+    } else {
+      throw new RavenError(
+        "invalid",
+        "usage: raven config get|set --db <path> <key> [--value <words>]",
+      );
+    }
+  });
 }
 
 /** One JSON line per message, oldest first, to stdout. */

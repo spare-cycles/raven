@@ -4,6 +4,7 @@ import process from "node:process";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createClient } from "./client.ts";
 import {
+  configCommand,
   exportCommand,
   importCommand,
   serveCommand,
@@ -21,6 +22,8 @@ const USAGE = `usage: raven <command>
   token     create --db <path> --label <l> [--scope agent|admin] (--project <key>… | --all-projects)
             token revoke --db <path> --label <l>
             token list --db <path>
+  config    get --db <path> names.nouns|names.adjectives
+            set --db <path> names.nouns|names.adjectives --value "A, B, …"   (empty restores the default)
   export    --db <path> [--project <key>]       one JSON line per message, oldest first
   import    --db <path> --file <jsonl|->         history from another system (see README)
   snapshot  --db <path> --out <file>             a consistent copy, safe while serving
@@ -58,6 +61,9 @@ try {
       break;
     case "token":
       tokenCommand(rest);
+      break;
+    case "config":
+      configCommand(rest);
       break;
     case "export":
       exportCommand(rest);

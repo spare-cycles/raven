@@ -2,6 +2,7 @@
 import { Database } from "bun:sqlite";
 import { agents, register, retire } from "./agents.ts";
 import { reply, send, type Written } from "./messages.ts";
+import { getWords, setWords } from "./names.ts";
 import { inbox, mark, search, streamScope, threadState, topic } from "./reads.ts";
 import { toMessage } from "./rows.ts";
 import { migrate } from "./schema.ts";
@@ -38,19 +39,33 @@ import { Wakeups } from "./wakeups.ts";
 export type StoreOptions = {
   /** The clock every timestamp comes from; tests pin it. */
   readonly now?: () => Date;
+  /** The randomness behind picked agent names; tests pin it. */
+  readonly random?: () => number;
 };
 
 // Each verb runs synchronously against SQLite; Promise.try turns a refusal into a rejection, never a throw.
 export class Store implements Raven {
   readonly #db: Database;
   readonly #now: () => Date;
+  readonly #random: () => number;
   readonly #wakeups = new Wakeups();
   #closed = false;
 
   constructor(path: string, options: StoreOptions = {}) {
     this.#db = new Database(path, { create: true, strict: true });
     this.#now = options.now ?? ((): Date => new Date());
+    this.#random = options.random ?? Math.random;
     migrate(this.#db);
+  }
+
+  /** A name-list setting in force (`names.nouns`, `names.adjectives`): the stored replacement or the default. */
+  getSetting(key: string): readonly string[] {
+    return getWords(this.#db, key);
+  }
+
+  /** Replaces a name list after validating it; an empty value restores the default. */
+  setSetting(key: string, value: string): void {
+    setWords(this.#db, key, value);
   }
 
   /** Ends every open stream, then closes the database; calling it again is harmless. */
@@ -152,7 +167,7 @@ export class Store implements Raven {
   }
 
   register(input: RegisterInput): Promise<Agent> {
-    return Promise.try(() => register(this.#db, input, this.#ts()));
+    return Promise.try(() => register(this.#db, input, this.#ts(), this.#random));
   }
 
   retire(input: { readonly project: string; readonly name: string }): Promise<void> {

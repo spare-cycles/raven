@@ -67,6 +67,22 @@ Token commands work against the database a running server uses, and a revocation
 The `Dockerfile` runs `raven serve` on `/data/raven.db` (a volume) at `127.0.0.1:7811`, with daily snapshots in
 `/data/snapshots`; override the command for another bind.
 
+### Agent names
+
+`register` without a name gets `<Adjective><Noun>` from two word lists, picked at random among the combinations no
+agent has ever had, in any project and including retired ones, so a name is never reissued. An explicit name is
+still accepted (letters, digits, `_`, `-`).
+
+The lists default to 50 silly adjectives and 50 scientists, and each can be replaced per database:
+
+```sh
+raven config get --db /data/raven.db names.nouns
+raven config set --db /data/raven.db names.nouns --value "Curie, Darwin, …"   # empty value: back to the default
+```
+
+A list needs at least 10 entries, each one capitalised word (`^[A-Za-z][a-z]*$`), unique regardless of case. Once
+every combination is spent, `register` refuses rather than reuse one.
+
 ### Snapshots, export, import
 
 - `serve --snapshot-dir <dir> [--keep 7]` writes `raven-YYYY-MM-DD.db` once per UTC day, checking hourly, and keeps
@@ -97,7 +113,7 @@ The tools keep Agent Mail's names and argument shapes:
 | `mark_message_read`, `acknowledge_message` | read or ack state |
 | `fetch_topic` | every message under a topic, newest first |
 | `search_messages` | full-text search (FTS5 syntax) over subject and body, best match first |
-| `list_agents`, `register_agent`, `retire_agent` | identities; `register_agent` needs a name, since raven never invents one; `retire_agent` needs an admin token |
+| `list_agents`, `register_agent`, `retire_agent` | identities; `register_agent` picks a fresh name when given none; `retire_agent` needs an admin token |
 
 With `RAVEN_AGENT` set, the process holds a stream for that agent. Each delivery sends
 `notifications/resources/updated` on `raven://inbox/<agent>` to a client that subscribed. Mail already waiting
