@@ -64,8 +64,24 @@ raven token revoke --db /data/raven.db --label agents
 
 Token commands work against the database a running server uses, and a revocation takes effect on the next request.
 
-The `Dockerfile` runs `raven serve` on `/data/raven.db` (a volume) at `127.0.0.1:7811`; override the command for
-another bind.
+The `Dockerfile` runs `raven serve` on `/data/raven.db` (a volume) at `127.0.0.1:7811`, with daily snapshots in
+`/data/snapshots`; override the command for another bind.
+
+### Snapshots, export, import
+
+- `serve --snapshot-dir <dir> [--keep 7]` writes `raven-YYYY-MM-DD.db` once per UTC day, checking hourly, and keeps
+  the newest `--keep`. `raven snapshot --db <path> --out <file>` takes one by hand. Both use `VACUUM INTO`, which
+  is consistent while the server writes.
+- `raven export --db <path> [--project <key>]` prints one `Message` JSON line per message, oldest first.
+- `raven import --db <path> --file <jsonl|->` takes history from another system, one record per line. A record
+  has `project`, `ref`, `from`, `to`, `subject`, `body` and `ts` (ISO-8601), plus optional `cc`, `topic`,
+  `importance`, and `replyTo` (the `ref` of an earlier record).
+  - Times are kept, and a `replyTo` joins its thread.
+  - Names never seen are registered (program `import`).
+  - Deliveries arrive already read, so nothing wakes.
+  - A `ref` already imported is skipped, so a rerun is safe.
+  - The whole file is validated first and written in one transaction: a bad record, or a `replyTo` pointing at a
+    later record, imports nothing.
 
 ## `raven mcp`: agents, and waking them
 

@@ -14,6 +14,7 @@ import {
   type TokenInfo,
   type TokenInput,
 } from "./tokens.ts";
+import { exportMessages, type ImportRecord, importMessages, snapshot } from "./transfer.ts";
 import type {
   Agent,
   Delivery,
@@ -86,6 +87,21 @@ export class Store implements Raven {
 
   listTokens(): TokenInfo[] {
     return listTokens(this.#db);
+  }
+
+  /** Every message, oldest first; `project` narrows to one. */
+  exportMessages(project?: string): Generator<Message> {
+    return exportMessages(this.#db, project);
+  }
+
+  /** History in, in one transaction; see `importMessages` in `transfer.ts` for the rules. */
+  importMessages(records: readonly ImportRecord[]): { imported: number; skipped: number } {
+    return importMessages(this.#db, records);
+  }
+
+  /** A consistent copy of the database at `path` (which must not exist), taken while serving. */
+  snapshot(path: string): void {
+    snapshot(this.#db, path);
   }
 
   async *stream(query: StreamQuery): AsyncIterable<Delivery> {
