@@ -67,6 +67,7 @@ export function toAgent(row: AgentRow): Agent {
     model: row.model,
     task: row.task,
     createdTs: row.created_ts,
+    retiredTs: row.retired_ts,
   };
 }
 

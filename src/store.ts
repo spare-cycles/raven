@@ -17,6 +17,7 @@ import {
 import { exportMessages, type ImportRecord, importMessages, snapshot } from "./transfer.ts";
 import type {
   Agent,
+  AgentsQuery,
   Delivery,
   IdsInput,
   InboxMessage,
@@ -146,8 +147,8 @@ export class Store implements Raven {
     return Promise.try(() => threadState(this.#db, query.project, query.thread));
   }
 
-  agents(query: { readonly project: string }): Promise<Agent[]> {
-    return Promise.try(() => agents(this.#db, query.project));
+  agents(query: AgentsQuery): Promise<Agent[]> {
+    return Promise.try(() => agents(this.#db, query.project, query.includeRetired === true));
   }
 
   register(input: RegisterInput): Promise<Agent> {

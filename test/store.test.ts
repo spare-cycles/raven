@@ -193,6 +193,9 @@ describe("store", () => {
     expect(await refused(bad)).toBe("invalid");
     await raven.retire({ project: P, name: "Bo" });
     expect((await raven.agents({ project: P })).map((a) => a.name)).not.toContain("Bo");
+    const all = await raven.agents({ project: P, includeRetired: true });
+    expect(all.find((a) => a.name === "Bo")?.retiredTs).not.toBeNull();
+    expect(all.find((a) => a.name === "Ana")?.retiredTs).toBeNull();
     await raven.register({ project: P, name: "Bo", program: "omp", model: "m2" });
     const bo = (await raven.agents({ project: P })).find((a) => a.name === "Bo");
     expect(bo?.model).toBe("m2");

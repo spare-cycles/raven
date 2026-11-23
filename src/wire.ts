@@ -2,6 +2,7 @@
 import { z } from "zod";
 import type { RavenErrorCode } from "./error.ts";
 import type {
+  AgentsQuery,
   IdsInput,
   InboxQuery,
   RegisterInput,
@@ -21,7 +22,7 @@ export type RpcParams = {
   topic: TopicQuery;
   search: SearchQuery;
   threadState: { readonly project: string; readonly thread: number };
-  agents: { readonly project: string };
+  agents: AgentsQuery;
   register: RegisterInput;
   retire: { readonly project: string; readonly name: string };
 };
@@ -73,7 +74,7 @@ export const RPC: { readonly [M in RpcMethod]: z.ZodType<RpcParams[M]> } = {
   }),
   search: z.strictObject({ project, query: z.string().min(1), limit: id.exactOptional() }),
   threadState: z.strictObject({ project, thread: id }),
-  agents: z.strictObject({ project }),
+  agents: z.strictObject({ project, includeRetired: z.boolean().exactOptional() }),
   register: z.strictObject({
     project,
     name,
