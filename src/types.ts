@@ -31,13 +31,20 @@ export type Sent = { readonly id: number; readonly thread: number; readonly ts: 
 /** One pushed message; `cursor` is the message id, the `after` a reconnecting stream resumes from. */
 export type Delivery = { readonly cursor: number; readonly message: Message };
 
-/** An active identity; `agents()` does not list retired ones. */
+/** An identity; `retiredTs` is set once it is retired, and `agents()` lists those only when asked. */
 export type Agent = {
   readonly name: string;
   readonly program: string;
   readonly model: string;
   readonly task: string;
   readonly createdTs: string;
+  readonly retiredTs: string | null;
+};
+
+export type AgentsQuery = {
+  readonly project: string;
+  /** Lists retired identities too: every name ever registered, for a caller choosing a fresh one. */
+  readonly includeRetired?: boolean;
 };
 
 export type ThreadState = {
@@ -140,7 +147,7 @@ export interface Raven {
     readonly project: string;
     readonly thread: number;
   }) => Promise<ThreadState>;
-  agents: (query: { readonly project: string }) => Promise<Agent[]>;
+  agents: (query: AgentsQuery) => Promise<Agent[]>;
   /** Creates the project and the agent when missing; registering a retired name brings it back. */
   register: (input: RegisterInput) => Promise<Agent>;
   retire: (input: { readonly project: string; readonly name: string }) => Promise<void>;

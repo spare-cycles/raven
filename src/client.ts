@@ -2,6 +2,7 @@
 import { RavenError } from "./error.ts";
 import type {
   Agent,
+  AgentsQuery,
   Delivery,
   IdsInput,
   InboxMessage,
@@ -160,7 +161,7 @@ export class RavenClient implements Raven {
     return this.#rpc("threadState", query) as Promise<ThreadState>;
   }
 
-  agents(query: RpcParams["agents"]): Promise<Agent[]> {
+  agents(query: AgentsQuery): Promise<Agent[]> {
     return this.#rpc("agents", query) as Promise<Agent[]>;
   }
 

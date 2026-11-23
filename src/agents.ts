@@ -34,12 +34,12 @@ export function register(db: Database, input: RegisterInput, ts: string): Agent 
   })();
 }
 
-export function agents(db: Database, project: string): Agent[] {
+export function agents(db: Database, project: string, includeRetired: boolean): Agent[] {
   return db
-    .query<AgentRow, [number]>(
-      "SELECT * FROM agents WHERE project_id = ? AND retired_ts IS NULL ORDER BY name",
+    .query<AgentRow, [number, number]>(
+      "SELECT * FROM agents WHERE project_id = ? AND (? = 1 OR retired_ts IS NULL) ORDER BY name",
     )
-    .all(projectId(db, project))
+    .all(projectId(db, project), includeRetired ? 1 : 0)
     .map(toAgent);
 }
 
