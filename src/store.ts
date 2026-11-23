@@ -5,6 +5,7 @@ import { reply, send, type Written } from "./messages.ts";
 import { inbox, mark, streamScope, threadState, topic } from "./reads.ts";
 import { toMessage } from "./rows.ts";
 import { migrate } from "./schema.ts";
+import { authorize, type Grant, issueToken, revokeToken, type TokenInput } from "./tokens.ts";
 import type {
   Agent,
   Delivery,
@@ -54,6 +55,24 @@ export class Store implements Raven {
 
   reply(input: ReplyInput): Promise<Sent> {
     return Promise.try(() => this.#commit(reply(this.#db, input, this.#ts())));
+  }
+
+  /** Throws the RavenError `stream(query)` would raise on its first step, so a server can refuse before streaming. */
+  checkStream(query: Pick<StreamQuery, "project" | "agent">): void {
+    streamScope(this.#db, query.project, query.agent);
+  }
+
+  /** Mints a bearer token; the returned value is the only copy, the store keeps its hash. */
+  issueToken(input: TokenInput): string {
+    return issueToken(this.#db, input, this.#ts());
+  }
+
+  authorize(token: string): Grant | null {
+    return authorize(this.#db, token);
+  }
+
+  revokeToken(label: string): void {
+    revokeToken(this.#db, label, this.#ts());
   }
 
   async *stream(query: StreamQuery): AsyncIterable<Delivery> {

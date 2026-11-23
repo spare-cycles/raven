@@ -52,6 +52,18 @@ const MIGRATIONS: readonly string[] = [
     PRIMARY KEY (agent_id, message_id)
   ) WITHOUT ROWID;
   `,
+  // Bearer tokens: only the SHA-256 of a token is stored; `projects_json` is a key list or ["*"].
+  `
+  CREATE TABLE tokens (
+    id INTEGER PRIMARY KEY,
+    label TEXT NOT NULL UNIQUE,
+    hash TEXT NOT NULL UNIQUE,
+    scope TEXT NOT NULL CHECK (scope IN ('agent', 'admin')),
+    projects_json TEXT NOT NULL,
+    created_ts TEXT NOT NULL,
+    revoked_ts TEXT
+  );
+  `,
 ];
 
 /** Durability first: `send` promises the message is on disk when it resolves. */
