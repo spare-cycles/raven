@@ -36,7 +36,7 @@ export type AgentRow = {
 
 export const MESSAGE_COLUMNS = `m.id, p.key AS project, s.name AS sender, m.to_json, m.cc_json, m.subject,
   m.body, m.thread_id, m.topic, m.importance, m.ack_required, m.created_ts`;
-const JOIN_PROJECT_SENDER =
+export const JOIN_PROJECT_SENDER: string =
   "JOIN projects p ON p.id = m.project_id JOIN agents s ON s.id = m.sender_id";
 export const MESSAGE_FROM: string = `messages m ${JOIN_PROJECT_SENDER}`;
 export const DELIVERY_FROM: string = `deliveries d JOIN messages m ON m.id = d.message_id ${JOIN_PROJECT_SENDER}`;

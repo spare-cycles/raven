@@ -1,10 +1,11 @@
 /** Reading messages and a recipient's read/ack state. */
-import type { Database } from "bun:sqlite";
+import { type Database, SQLiteError } from "bun:sqlite";
 import { RavenError } from "./error.ts";
 import {
   agentRow,
   DELIVERY_FROM,
   type InboxRow,
+  JOIN_PROJECT_SENDER,
   limitOf,
   MESSAGE_COLUMNS,
   MESSAGE_FROM,
@@ -17,6 +18,7 @@ import type {
   InboxMessage,
   InboxQuery,
   Message,
+  SearchQuery,
   ThreadState,
   TopicQuery,
 } from "./types.ts";
@@ -115,6 +117,24 @@ export function topic(db: Database, query: TopicQuery): Message[] {
     )
     .all(pid, query.topic, since, limitOf(query.limit))
     .map(toMessage);
+}
+
+export function search(db: Database, query: SearchQuery): Message[] {
+  const pid = projectId(db, query.project);
+  try {
+    return db
+      .query<MessageRow, [string, number, number]>(
+        `SELECT ${MESSAGE_COLUMNS} FROM messages_fts f JOIN messages m ON m.id = f.rowid ${JOIN_PROJECT_SENDER}
+         WHERE messages_fts MATCH ? AND m.project_id = ? ORDER BY bm25(messages_fts) LIMIT ?`,
+      )
+      .all(query.query, pid, limitOf(query.limit))
+      .map(toMessage);
+  } catch (e) {
+    if (e instanceof SQLiteError) {
+      throw new RavenError("invalid", `search query: ${e.message}`, { cause: e });
+    }
+    throw e;
+  }
 }
 
 export function threadState(db: Database, project: string, thread: number): ThreadState {

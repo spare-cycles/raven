@@ -79,3 +79,31 @@ export function revokeToken(db: Database, label: string, ts: string): void {
     throw new RavenError("invalid", `no live token labelled ${label}`);
   }
 }
+
+/** A token's record without its secret. */
+export type TokenInfo = Grant & { readonly createdTs: string; readonly revokedTs: string | null };
+
+export function listTokens(db: Database): TokenInfo[] {
+  return db
+    .query<
+      {
+        label: string;
+        scope: Scope;
+        projects_json: string;
+        created_ts: string;
+        revoked_ts: string | null;
+      },
+      []
+    >("SELECT label, scope, projects_json, created_ts, revoked_ts FROM tokens ORDER BY label")
+    .all()
+    .map((row) => {
+      const projects = JSON.parse(row.projects_json) as string[];
+      return {
+        label: row.label,
+        scope: row.scope,
+        projects: projects.includes("*") ? "*" : projects,
+        createdTs: row.created_ts,
+        revokedTs: row.revoked_ts,
+      };
+    });
+}

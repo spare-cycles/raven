@@ -2,10 +2,18 @@
 import { Database } from "bun:sqlite";
 import { agents, register, retire } from "./agents.ts";
 import { reply, send, type Written } from "./messages.ts";
-import { inbox, mark, streamScope, threadState, topic } from "./reads.ts";
+import { inbox, mark, search, streamScope, threadState, topic } from "./reads.ts";
 import { toMessage } from "./rows.ts";
 import { migrate } from "./schema.ts";
-import { authorize, type Grant, issueToken, revokeToken, type TokenInput } from "./tokens.ts";
+import {
+  authorize,
+  type Grant,
+  issueToken,
+  listTokens,
+  revokeToken,
+  type TokenInfo,
+  type TokenInput,
+} from "./tokens.ts";
 import type {
   Agent,
   Delivery,
@@ -16,6 +24,7 @@ import type {
   Raven,
   RegisterInput,
   ReplyInput,
+  SearchQuery,
   SendInput,
   Sent,
   StreamQuery,
@@ -75,6 +84,10 @@ export class Store implements Raven {
     revokeToken(this.#db, label, this.#ts());
   }
 
+  listTokens(): TokenInfo[] {
+    return listTokens(this.#db);
+  }
+
   async *stream(query: StreamQuery): AsyncIterable<Delivery> {
     const { key, page } = streamScope(this.#db, query.project, query.agent);
     const { signal } = query;
@@ -107,6 +120,10 @@ export class Store implements Raven {
 
   topic(query: TopicQuery): Promise<Message[]> {
     return Promise.try(() => topic(this.#db, query));
+  }
+
+  search(query: SearchQuery): Promise<Message[]> {
+    return Promise.try(() => search(this.#db, query));
   }
 
   threadState(query: { readonly project: string; readonly thread: number }): Promise<ThreadState> {
