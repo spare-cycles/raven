@@ -19,9 +19,12 @@ const AGENT = "Sleeper";
 const CLI = resolve(import.meta.dir, "../src/cli.ts");
 const EXTENSION = resolve(import.meta.dir, "../extension/raven-wake.ts");
 const WAIT_MS = 60_000;
+/** Not an omp event: the test records the child's exit under this type, so waits stop at once. */
+const EXITED = "raven-test:exited";
 
 type RpcEvent = {
   type?: string;
+  code?: number;
   message?: { role?: string; content?: unknown; customType?: string };
 };
 
@@ -64,6 +67,10 @@ async function until(events: RpcEvent[], match: (e: RpcEvent) => boolean): Promi
     const hit = events.find(match);
     if (hit !== undefined) {
       return hit;
+    }
+    const exit = events.find((e) => e.type === EXITED);
+    if (exit !== undefined) {
+      throw new Error(`omp exited with code ${String(exit.code)} (its stderr is above)`);
     }
     // A child's output has no event to await but its own arrival: poll what has been collected.
     await sleep(100);
@@ -140,6 +147,7 @@ async function session(options: { notifications: boolean; extension: boolean }):
   );
   const events: RpcEvent[] = [];
   collect(child.stdout, events).catch(() => undefined);
+  child.exited.then((code) => events.push({ type: EXITED, code })).catch(() => undefined);
   return {
     store,
     events,
