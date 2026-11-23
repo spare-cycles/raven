@@ -6,6 +6,7 @@ import type {
   InboxQuery,
   RegisterInput,
   ReplyInput,
+  SearchQuery,
   SendInput,
   TopicQuery,
 } from "./types.ts";
@@ -18,6 +19,7 @@ export type RpcParams = {
   markRead: IdsInput;
   ack: IdsInput;
   topic: TopicQuery;
+  search: SearchQuery;
   threadState: { readonly project: string; readonly thread: number };
   agents: { readonly project: string };
   register: RegisterInput;
@@ -69,6 +71,7 @@ export const RPC: { readonly [M in RpcMethod]: z.ZodType<RpcParams[M]> } = {
     since: z.string().exactOptional(),
     limit: id.exactOptional(),
   }),
+  search: z.strictObject({ project, query: z.string().min(1), limit: id.exactOptional() }),
   threadState: z.strictObject({ project, thread: id }),
   agents: z.strictObject({ project }),
   register: z.strictObject({

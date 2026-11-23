@@ -10,6 +10,7 @@ import type {
   Raven,
   RegisterInput,
   ReplyInput,
+  SearchQuery,
   SendInput,
   Sent,
   StreamQuery,
@@ -149,6 +150,10 @@ export class RavenClient implements Raven {
 
   topic(query: TopicQuery): Promise<Message[]> {
     return this.#rpc("topic", query) as Promise<Message[]>;
+  }
+
+  search(query: SearchQuery): Promise<Message[]> {
+    return this.#rpc("search", query) as Promise<Message[]>;
   }
 
   threadState(query: RpcParams["threadState"]): Promise<ThreadState> {

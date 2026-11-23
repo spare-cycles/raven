@@ -64,6 +64,14 @@ const MIGRATIONS: readonly string[] = [
     revoked_ts TEXT
   );
   `,
+  // Full-text search over subject and body. Messages are never edited or deleted, so an insert trigger keeps it whole.
+  `
+  CREATE VIRTUAL TABLE messages_fts USING fts5(subject, body, content = 'messages', content_rowid = 'id');
+  INSERT INTO messages_fts (rowid, subject, body) SELECT id, subject, body FROM messages;
+  CREATE TRIGGER messages_fts_insert AFTER INSERT ON messages BEGIN
+    INSERT INTO messages_fts (rowid, subject, body) VALUES (new.id, new.subject, new.body);
+  END;
+  `,
 ];
 
 /** Durability first: `send` promises the message is on disk when it resolves. */

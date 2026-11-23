@@ -105,6 +105,13 @@ export type TopicQuery = {
   readonly limit?: number;
 };
 
+export type SearchQuery = {
+  readonly project: string;
+  /** SQLite FTS5 syntax over subject and body: words, "phrases", prefix*, AND/OR/NOT. */
+  readonly query: string;
+  readonly limit?: number;
+};
+
 export type RegisterInput = {
   readonly project: string;
   /** Chosen by the caller: raven never invents names. */
@@ -127,6 +134,8 @@ export interface Raven {
   ack: (input: IdsInput) => Promise<void>;
   /** Newest first. */
   topic: (query: TopicQuery) => Promise<Message[]>;
+  /** Best match first; an FTS5 syntax error is refused as `invalid`. */
+  search: (query: SearchQuery) => Promise<Message[]>;
   threadState: (query: {
     readonly project: string;
     readonly thread: number;

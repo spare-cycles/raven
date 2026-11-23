@@ -43,14 +43,29 @@ it.
 Refusals are `{ error: { code, message } }`. The status is 400 for `invalid`, 401 `unauthorized`, 403 `forbidden`,
 404 for `unknown_*`, 409 `retired_agent` and 503 `unavailable`.
 
-Every other route needs `Authorization: Bearer <token>`. `store.issueToken({ label, scope, projects })` mints a token
-and returns the only copy; the store keeps its SHA-256. The scopes are:
+Every other route needs `Authorization: Bearer <token>`. `raven token create` (or `store.issueToken`) mints a token
+and prints the only copy; the store keeps its SHA-256. The scopes are:
 
 - `agent`: messaging and reads in its projects, including registering agents.
 - `admin`: adds the project firehose (a stream without `agent`) and `retire`.
 
 The client's `stream` reconnects with backoff after a dropped connection or a server restart, and resumes from its
 last cursor. It stops with a `RavenError` on a refusal that would only repeat.
+
+### Running it
+
+```sh
+raven serve --db /data/raven.db --host 127.0.0.1 --port 7811
+raven token create --db /data/raven.db --label realmd --scope admin --project /perso/realm
+raven token create --db /data/raven.db --label agents --project /perso/realm
+raven token list --db /data/raven.db             # one JSON line per token, no secrets
+raven token revoke --db /data/raven.db --label agents
+```
+
+Token commands work against the database a running server uses, and a revocation takes effect on the next request.
+
+The `Dockerfile` runs `raven serve` on `/data/raven.db` (a volume) at `127.0.0.1:7811`; override the command for
+another bind.
 
 ## `raven mcp`: agents, and waking them
 
@@ -65,6 +80,7 @@ The tools keep Agent Mail's names and argument shapes:
 | `fetch_inbox` | newest first, marks the returned messages read; `include_bodies` defaults to false |
 | `mark_message_read`, `acknowledge_message` | read or ack state |
 | `fetch_topic` | every message under a topic, newest first |
+| `search_messages` | full-text search (FTS5 syntax) over subject and body, best match first |
 | `list_agents`, `register_agent`, `retire_agent` | identities; `register_agent` needs a name, since raven never invents one; `retire_agent` needs an admin token |
 
 With `RAVEN_AGENT` set, the process holds a stream for that agent. Each delivery sends

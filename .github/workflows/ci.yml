@@ -47,3 +47,18 @@ jobs:
           if grep -q '<skipped' "$RUNNER_TEMP/omp.xml"; then
             echo "an omp test skipped"; exit 1
           fi
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t raven:ci .
+      # The image serves: healthcheck from inside its own network namespace.
+      - run: |
+          docker run -d --name raven-ci raven:ci
+          for _ in $(seq 1 20); do
+            if docker exec raven-ci wget -qO- http://127.0.0.1:7811/healthz; then exit 0; fi
+            sleep 0.5
+          done
+          docker logs raven-ci; exit 1
