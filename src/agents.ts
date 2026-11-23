@@ -1,16 +1,26 @@
 /** Projects and agent identities. */
 import type { Database } from "bun:sqlite";
 import { RavenError } from "./error.ts";
+import { pickName } from "./names.ts";
 import { type AgentRow, agentRow, projectId, toAgent } from "./rows.ts";
 import type { Agent, RegisterInput } from "./types.ts";
 
 const NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u;
 
-export function register(db: Database, input: RegisterInput, ts: string): Agent {
+/**
+ * Registers (or updates) an agent. Without a name, raven picks one no agent has ever had; with one, the name must
+ * match the format, and an existing name is updated (a retired one restored).
+ */
+export function register(
+  db: Database,
+  input: RegisterInput,
+  ts: string,
+  random?: () => number,
+): Agent {
   if (input.project.length === 0) {
     throw new RavenError("invalid", "project must not be empty");
   }
-  if (!NAME.test(input.name)) {
+  if (input.name !== undefined && !NAME.test(input.name)) {
     throw new RavenError("invalid", `agent name must match ${NAME.source}: ${input.name}`);
   }
   return db.transaction((): Agent => {
@@ -18,7 +28,7 @@ export function register(db: Database, input: RegisterInput, ts: string): Agent 
       "INSERT INTO projects (key, created_ts) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
     ).run(input.project, ts);
     const pid = projectId(db, input.project);
-    const { name } = input;
+    const name = input.name ?? pickName(db, random);
     const row = db
       .query<AgentRow, [number, string, string, string, string, string]>(
         `INSERT INTO agents (project_id, name, program, model, task, created_ts) VALUES (?, ?, ?, ?, ?, ?)

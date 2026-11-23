@@ -77,7 +77,7 @@ export const RPC: { readonly [M in RpcMethod]: z.ZodType<RpcParams[M]> } = {
   agents: z.strictObject({ project, includeRetired: z.boolean().exactOptional() }),
   register: z.strictObject({
     project,
-    name,
+    name: name.exactOptional(),
     program: z.string(),
     model: z.string(),
     task: z.string().exactOptional(),

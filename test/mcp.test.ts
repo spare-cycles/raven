@@ -120,7 +120,7 @@ describe("raven mcp", () => {
     mcp.close();
   });
 
-  it("a refusal is a tool error carrying raven's code; register_agent demands a name", async () => {
+  it("a refusal is a tool error carrying raven's code; register_agent without a name gets one", async () => {
     const { client, mcp } = await connect(raven, "Ana");
     const typo = await client.callTool({
       name: "send_message",
@@ -132,7 +132,9 @@ describe("raven mcp", () => {
       name: "register_agent",
       arguments: { program: "omp", model: "m" },
     });
-    expect(nameless.isError).toBe(true);
+    expect(nameless.isError).toBeFalsy();
+    const { name } = textOf(nameless) as { name: string };
+    expect((await raven.agents({ project: P })).map((a) => a.name)).toContain(name);
     mcp.close();
   });
 });

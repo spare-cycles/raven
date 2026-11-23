@@ -72,6 +72,10 @@ const MIGRATIONS: readonly string[] = [
     INSERT INTO messages_fts (rowid, subject, body) VALUES (new.id, new.subject, new.body);
   END;
   `,
+  // Per-database settings: replacement name lists (`names.nouns`, `names.adjectives`).
+  `
+  CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+  `,
 ];
 
 /** Durability first: `send` promises the message is on disk when it resolves. */

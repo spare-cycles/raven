@@ -121,8 +121,8 @@ export type SearchQuery = {
 
 export type RegisterInput = {
   readonly project: string;
-  /** Chosen by the caller: raven never invents names. */
-  readonly name: string;
+  /** Omitted, raven picks an `<Adjective><Noun>` no agent has ever had. */
+  readonly name?: string;
   readonly program: string;
   readonly model: string;
   readonly task?: string;
