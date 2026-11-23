@@ -107,8 +107,8 @@ export type TopicQuery = {
 
 export type RegisterInput = {
   readonly project: string;
-  /** Omitted, raven picks an unused adjective+noun name. */
-  readonly name?: string;
+  /** Chosen by the caller: raven never invents names. */
+  readonly name: string;
   readonly program: string;
   readonly model: string;
   readonly task?: string;

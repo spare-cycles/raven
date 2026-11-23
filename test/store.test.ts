@@ -188,9 +188,9 @@ describe("store", () => {
     );
   });
 
-  it("register picks a free name, retire hides the agent, registering again restores it", async () => {
-    const named = await raven.register({ project: P, program: "omp", model: "m" });
-    expect(named.name).toMatch(/^[A-Z][a-z]+[A-Z][a-z]+\d*$/u);
+  it("register refuses a malformed name, retire hides the agent, registering again restores it", async () => {
+    const bad = raven.register({ project: P, name: "two words", program: "omp", model: "m" });
+    expect(await refused(bad)).toBe("invalid");
     await raven.retire({ project: P, name: "Bo" });
     expect((await raven.agents({ project: P })).map((a) => a.name)).not.toContain("Bo");
     await raven.register({ project: P, name: "Bo", program: "omp", model: "m2" });
